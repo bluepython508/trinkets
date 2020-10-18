@@ -4,7 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 
+import net.minecraft.client.gui.screen.ingame.AbstractInventoryScreen;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.slot.Slot;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -18,13 +23,10 @@ import dev.emi.trinkets.api.TrinketSlots;
 import dev.emi.trinkets.api.TrinketSlots.SlotGroup;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.screen.ingame.AbstractInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
-import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen.CreativeContainer;
-import net.minecraft.container.Slot;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemGroup;
-import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 
 /**
@@ -32,15 +34,20 @@ import net.minecraft.text.Text;
  */
 @Environment(EnvType.CLIENT)
 @Mixin(CreativeInventoryScreen.class)
-public abstract class CreativeInventoryScreenMixin extends AbstractInventoryScreen<CreativeInventoryScreen.CreativeContainer> {
+public abstract class CreativeInventoryScreenMixin extends AbstractInventoryScreen<CreativeInventoryScreen.CreativeScreenHandler> {
 	@Shadow
 	private static int selectedTab;
 
 	private List<Slot> creativeSlots = new ArrayList<Slot>();
 	private int mouseX, mouseY;
 
-	public CreativeInventoryScreenMixin(CreativeContainer container, PlayerInventory inventory, Text text) {
-		super(container, inventory, text);
+	public CreativeInventoryScreenMixin(CreativeInventoryScreen.CreativeScreenHandler screenHandler, PlayerInventory inventory, Text text) {
+		super(screenHandler, inventory, text);
+	}
+
+	@Inject(at = @At("RETURN"), method = "<init>")
+	public void constructor(PlayerEntity player, CallbackInfo info) {
+		this.playerInventoryTitleX = -100000;
 	}
 
 	@Inject(at = @At("TAIL"), method = "init")
@@ -107,7 +114,7 @@ public abstract class CreativeInventoryScreenMixin extends AbstractInventoryScre
 					}
 					TrinketsClient.activeSlots = new ArrayList<Slot>();
 					if (group.vanillaSlot != -1) {
-						TrinketsClient.activeSlots.add(this.container.getSlot(group.vanillaSlot));
+						TrinketsClient.activeSlots.add(this.getScreenHandler().getSlot(group.vanillaSlot));
 					}
 					for (Slot ts : tSlots) {
 						TrinketsClient.activeSlots.add(ts);
@@ -151,7 +158,7 @@ public abstract class CreativeInventoryScreenMixin extends AbstractInventoryScre
 					}
 					TrinketsClient.activeSlots = new ArrayList<Slot>();
 					if (group.vanillaSlot != -1) {
-						TrinketsClient.activeSlots.add(this.container.getSlot(group.vanillaSlot));
+						TrinketsClient.activeSlots.add(this.getScreenHandler().getSlot(group.vanillaSlot));
 					}
 					for (Slot ts : tSlots) {
 						TrinketsClient.activeSlots.add(ts);
@@ -169,74 +176,60 @@ public abstract class CreativeInventoryScreenMixin extends AbstractInventoryScre
 	}
 
 	@Inject(at = @At(value = "TAIL"), method = "drawBackground")
-	protected void drawBackground(float f, int x, int y, CallbackInfo info) {
+	protected void drawBackground(MatrixStack matrices, float f, int x, int y, CallbackInfo info) {
 		if (selectedTab != ItemGroup.INVENTORY.getIndex()) return;
 		GlStateManager.disableLighting();
 		SlotGroup lastGroup = TrinketSlots.slotGroups.get(TrinketSlots.slotGroups.size() - 1);
 		int lastX = getGroupX(lastGroup);
 		int lastY = getGroupY(lastGroup);
 		if (lastX < 0) {
-			TrinketInventoryRenderer.renderExcessSlotGroups(this, this.minecraft.getTextureManager(), this.x, this.y, lastX, lastY);
+			TrinketInventoryRenderer.renderExcessSlotGroups(matrices, this, this.client.getTextureManager(), this.x, this.y, lastX, lastY);
 		}
 	}
 
 	@Inject(at = @At(value = "TAIL"), method = "drawForeground")
-	protected void drawForeground(int x, int y, CallbackInfo info) {
-		if (selectedTab != ItemGroup.INVENTORY.getIndex()) return;
-		super.drawForeground(x, y);
-		GlStateManager.disableLighting();
-		for (SlotGroup group : TrinketSlots.slotGroups) {
-			if (!group.onReal && group.slots.size() > 0) {
-				this.minecraft.getTextureManager().bindTexture(TrinketInventoryRenderer.MORE_SLOTS_TEX);
-				this.blit(getGroupX(group), getGroupY(group), 4, 4, 18, 18);
-			}
-		}
-	}
-
-	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/ingame/CreativeInventoryScreen;drawMouseoverTooltip(II)V"), method = "render")
-	protected void drawMouseoverTooltip(int x, int y, float f, CallbackInfo info) {
+	protected void drawForeground(MatrixStack matrices, int x, int y, CallbackInfo info) {
 		if (selectedTab != ItemGroup.INVENTORY.getIndex()) return;
 		if (TrinketsClient.slotGroup != null) {
-			TrinketInventoryRenderer.renderGroupFront(this, this.minecraft.getTextureManager(), this.playerInventory,
-					this.x, this.y, TrinketsClient.slotGroup, getGroupX(TrinketsClient.slotGroup),
+			TrinketInventoryRenderer.renderGroupFront(matrices, this, this.client.getTextureManager(), this.playerInventory,
+					0, 0, TrinketsClient.slotGroup, getGroupX(TrinketsClient.slotGroup),
 					getGroupY(TrinketsClient.slotGroup));
 		} else if (TrinketsClient.displayEquipped > 0 && TrinketsClient.lastEquipped != null) {
-			TrinketInventoryRenderer.renderGroupFront(this, this.minecraft.getTextureManager(), this.playerInventory,
-					this.x, this.y, TrinketsClient.lastEquipped, getGroupX(TrinketsClient.lastEquipped),
+			TrinketInventoryRenderer.renderGroupFront(matrices, this, this.client.getTextureManager(), this.playerInventory,
+					0, 0, TrinketsClient.lastEquipped, getGroupX(TrinketsClient.lastEquipped),
 					getGroupY(TrinketsClient.lastEquipped));
 		} else {
 			return;
 		}
+		super.drawForeground(matrices, x, y);
+		RenderSystem.disableLighting();
+		for (SlotGroup group : TrinketSlots.slotGroups) {
+			if (!group.onReal && group.slots.size() > 0) {
+				this.client.getTextureManager().bindTexture(TrinketInventoryRenderer.MORE_SLOTS_TEX);
+				this.drawTexture(matrices, getGroupX(group), getGroupY(group), 4, 4, 18, 18);
+			}
+		}
 	}
 
 	@Inject(at = @At(value = "TAIL"), method = "render")
-	protected void render(int x, int y, float f, CallbackInfo info) {
+	protected void render(MatrixStack matrices, int x, int y, float f, CallbackInfo info) {
 		if (selectedTab != ItemGroup.INVENTORY.getIndex()) return;
 		mouseX = x;
 		mouseY = y;
-		PlayerInventory inventory = this.minecraft.player.inventory;
-		ItemStack stack = inventory.getCursorStack();
-		if (!stack.isEmpty()) {
-			try {
-				drawItem(stack, x - 8, y - 8, null);
-			} catch (Exception e) {
-				e.printStackTrace();
-				// Nice
-			}
-		}
 	}
 
 	@Inject(at = @At(value = "TAIL"), method = "setSelectedTab")
 	private void setSelectedTab(ItemGroup itemGroup, CallbackInfo info) {
 		if (itemGroup == ItemGroup.INVENTORY) {
+			ScreenHandler screenHandler = this.getScreenHandler();
 			creativeSlots.clear();
-			for (int i = 46; i < container.slots.size(); i++) {
-				if(container.getSlot(i).inventory instanceof TrinketInventory) creativeSlots.add(container.getSlot(i));
+			for (int i = 46; i < screenHandler.slots.size(); i++) {
+				if(screenHandler.getSlot(i).inventory instanceof TrinketInventory) creativeSlots.add(screenHandler.getSlot(i));
 			}
 			init(info);
 		}
 	}
-	
+
 	public boolean inBounds(SlotGroup group, float x, float y, boolean focused) {
 		int groupX = getGroupX(group);
 		int groupY = getGroupY(group);
@@ -289,15 +282,5 @@ public abstract class CreativeInventoryScreenMixin extends AbstractInventoryScre
 			} else if (TrinketSlots.slotGroups.get(i).slots.size() == 0) j--;
 		}
 		return 0;
-	}
-
-	public void drawItem(ItemStack stack, int x, int y, String string) {
-		GlStateManager.translatef(0.0F, 0.0F, 32.0F);
-		setBlitOffset(200);
-		this.itemRenderer.zOffset = 200.0F;
-		this.itemRenderer.renderGuiItem(stack, x, y);
-		this.itemRenderer.renderGuiItemOverlay(this.font, stack, x, y, string);
-		setBlitOffset(0);
-		this.itemRenderer.zOffset = 0.0F;
 	}
 }

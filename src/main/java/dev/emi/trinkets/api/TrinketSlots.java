@@ -8,7 +8,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 
 /**
- * Registry and container of all slot groups and slots
+ * Registry and screenHandler of all slot groups and slots
  */
 public class TrinketSlots {
 	public static List<SlotGroup> slotGroups = new ArrayList<SlotGroup>();
@@ -192,8 +192,8 @@ public class TrinketSlots {
 		public boolean disableQuickMove = false;
 		public Identifier texture;
 		public BiFunction<Slot, ItemStack, Boolean> canEquip = (slot, stack) -> {
-			if (!(stack.getItem() instanceof ITrinket)) return false;
-			return ((ITrinket) stack.getItem()).canWearInSlot(slot.getSlotGroup().getName(), slot.getName());
+			if (!(stack.getItem() instanceof Trinket)) return false;
+			return ((Trinket) stack.getItem()).canWearInSlot(slot.getSlotGroup().getName(), slot.getName());
 		};
 
 		public Slot(String name, Identifier texture, SlotGroup group){

@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version '0.2.5-SNAPSHOT'
+	id 'fabric-loom' version '0.4-SNAPSHOT'
 	id 'maven-publish'
 }
 
@@ -16,15 +16,16 @@ minecraft {
 allprojects{
 	repositories {
 		maven {
-			name = "NerdHubMC"
-			url = "https://maven.abusedmaster.xyz/"
+			name = "Ladysnake Libs"
+			url = 'https://dl.bintray.com/ladysnake/libs'
 		}
+		maven { url = "https://jitpack.io" }
 	}
 }
 dependencies {
 	//to change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}"
+	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modCompile "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
@@ -34,11 +35,15 @@ dependencies {
 	// You may need to force-disable transitiveness on them.
 	
 	//Base
-	modCompile "com.github.NerdHubMC.Cardinal-Components-API:cardinal-components-base:2.0.3"
-	include "com.github.NerdHubMC.Cardinal-Components-API:cardinal-components-base:2.0.3"
+	modCompile "io.github.onyxstudios.Cardinal-Components-API:cardinal-components-base:2.5.0"
+	include "io.github.onyxstudios.Cardinal-Components-API:cardinal-components-base:2.5.0"
 	//Entity
-	modCompile "com.github.NerdHubMC.Cardinal-Components-API:cardinal-components-entity:2.0.3"
-	include "com.github.NerdHubMC.Cardinal-Components-API:cardinal-components-entity:2.0.3"
+	modCompile "io.github.onyxstudios.Cardinal-Components-API:cardinal-components-entity:2.5.0"
+	include "io.github.onyxstudios.Cardinal-Components-API:cardinal-components-entity:2.5.0"
+
+	//modRuntime ("com.github.SuperCoder7979:databreaker:0.2.5") {
+	//	exclude module : "fabric-loader"
+	//}
 }
 processResources {
 	inputs.property "version", project.version
