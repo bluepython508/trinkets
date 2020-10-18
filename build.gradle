@@ -29,16 +29,16 @@ dependencies {
 	modCompile "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
-	modCompile "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
 	// PSA: Some older mods, compiled on Loom 0.2.1, might have outdated Maven POMs.
 	// You may need to force-disable transitiveness on them.
 	
 	//Base
-	modCompile "io.github.onyxstudios.Cardinal-Components-API:cardinal-components-base:2.5.0"
+	modImplementation "io.github.onyxstudios.Cardinal-Components-API:cardinal-components-base:2.5.0"
 	include "io.github.onyxstudios.Cardinal-Components-API:cardinal-components-base:2.5.0"
 	//Entity
-	modCompile "io.github.onyxstudios.Cardinal-Components-API:cardinal-components-entity:2.5.0"
+	modImplementation "io.github.onyxstudios.Cardinal-Components-API:cardinal-components-entity:2.5.0"
 	include "io.github.onyxstudios.Cardinal-Components-API:cardinal-components-entity:2.5.0"
 
 	//modRuntime ("com.github.SuperCoder7979:databreaker:0.2.5") {
